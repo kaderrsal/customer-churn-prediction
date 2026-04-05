@@ -1,13 +1,16 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 from imblearn.over_sampling import SMOTE
 import joblib
+import os
 
 def load_data_and_features(filepath='cleaned_churn_data.csv'):
     """Veriyi yükler ve özellik (Feature/X) ile hedef değişkeni (Target/y) ayırır."""
@@ -56,53 +59,88 @@ def build_and_evaluate_model():
     print(f"info: SMOTE Öncesi Sınıf Dağılımı: \n{y_train.value_counts()}")
     print(f"info: SMOTE Sonrası Sınıf Dağılımı: \n{y_train_resampled.value_counts()}")
     
-    # 4. Modellerin Tanımlanması
-    # Daha yüksek doğruluk için farklı makine öğrenmesi algoritmaları deniyoruz:
+    # 4. Modellerin Tanımlanması (Temel Modeller)
     models = {
-        "Lojistik Regresyon": LogisticRegression(max_iter=1000, random_state=42),
-        "Random Forest (Rastgele Orman)": RandomForestClassifier(n_estimators=100, random_state=42),
-        "Gradient Boosting (GBM)": GradientBoostingClassifier(n_estimators=100, random_state=42)
+        "Random Forest": RandomForestClassifier(random_state=42),
+        "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
+    }
+
+    # Hiperparametre gridleri
+    param_grids = {
+        "Random Forest": {
+            'n_estimators': [100, 200],
+            'max_depth': [10, 15, None],
+            'min_samples_split': [2, 5]
+        },
+        "XGBoost": {
+            'n_estimators': [100, 200],
+            'max_depth': [3, 5, 7],
+            'learning_rate': [0.01, 0.1, 0.2]
+        }
     }
     
     best_model_name = ""
     best_acc = 0
     best_y_pred = None
+    best_model = None
     
     print("\n" + "="*50)
-    print("info: Modeller eğitiliyor ve karşılaştırılıyor...")
+    print("info: Modeller eğitiliyor (GridSearchCV ile Optimizasyon)...")
     print("="*50)
     
-    # 5. Modellerin Eğitilmesi ve Karşılaştırılması
+    # 5. Modellerin Eğitilmesi ve Karşılaştırılması (GridSearchCV eklendi)
     for model_name, model in models.items():
-        # Modeli SMOTE uygulanmış, dengeli veri ile eğit
-        model.fit(X_train_resampled, y_train_resampled)
+        print(f"info: {model_name} için Hiperparametre araması yapılıyor...")
+        grid_search = GridSearchCV(estimator=model, param_grid=param_grids[model_name], cv=3, scoring='roc_auc', n_jobs=-1)
+        grid_search.fit(X_train_resampled, y_train_resampled)
         
-        # Tahminleme (Prediction) - Test verisi asla değiştirilmez (orijinal veriden test edilir)
-        y_pred = model.predict(X_test_scaled)
-        y_proba = model.predict_proba(X_test_scaled)[:, 1] 
+        # En iyi hiperparametrelerle model
+        best_grid_model = grid_search.best_estimator_
+        print(f"info: {model_name} En iyi parametreler: {grid_search.best_params_}")
         
+        # Tahminleme (Prediction) - Test verisi orijinal halinde kalıyor
+        y_pred = best_grid_model.predict(X_test_scaled)
         # Metrikler
+        y_proba = best_grid_model.predict_proba(X_test_scaled)[:, 1] 
         acc = accuracy_score(y_test, y_pred)
         roc = roc_auc_score(y_test, y_proba)
         
-        print(f"\n--- {model_name} Sonuçları ---")
+        print(f"\n--- {model_name} Sonuçları (Optimize Edilmiş) ---")
         print(f"Accuracy (Doğruluk Oranı): {acc:.4f}")
         print(f"ROC-AUC Skoru:             {roc:.4f}")
         
-        if acc > best_acc:
-            best_acc = acc
+        # Seçimde ROC-AUC puanına öncelik veriyoruz (Dengesiz Veri)
+        if roc > best_acc:
+            best_acc = roc
             best_model_name = model_name
             best_y_pred = y_pred
+            best_model = best_grid_model
 
     print("\n" + "="*50)
-    print(f"EN İYİ MODEL: {best_model_name} (Doğruluk: {best_acc:.4f})")
+    print(f"EN İYİ MODEL: {best_model_name} (ROC-AUC: {best_acc:.4f})")
     print("="*50)
     
-    print(f"\n{best_model_name} için Sınıflandırma Analizi (Classification Report):")
+    print(f"\n{best_model_name} için Sınıflandırma Analizi:")
     print(classification_report(y_test, best_y_pred))
     
-    # 5.5. En İyi Modeli ve Scaler'ı Ara Yüz (Streamlit) İçin Kaydetme
-    joblib.dump(models[best_model_name], 'best_churn_model.pkl')
+    # 6. Özellik Önemi (Feature Importance) Çizimi (En çok etki eden metrikler)
+    print("info: Özellik önemleri görselleştiriliyor...")
+    importances = best_model.feature_importances_
+    features = X_train_resampled.columns
+    indices = np.argsort(importances)[::-1]
+    
+    plt.figure(figsize=(10, 6))
+    plt.title(f"Ayrılmayı Tetikleyen Faktörler (Feature Importance) - {best_model_name}")
+    # En önemli 15 faktör
+    plt.bar(range(15), importances[indices][:15], color='teal', align="center")
+    plt.xticks(range(15), [features[i] for i in indices[:15]], rotation=45, ha='right')
+    plt.tight_layout()
+    os.makedirs('assets', exist_ok=True)
+    plt.savefig('assets/feature_importance.png')
+    plt.close()
+    
+    # 7. Model ve Araçların Dışa Aktarımı
+    joblib.dump(best_model, 'best_churn_model.pkl')
     joblib.dump(scaler, 'scaler.pkl')
     # Orijinal veri şemasını bilmemiz gerektiği için columns kaydı
     joblib.dump(X_train_resampled.columns.tolist(), 'model_columns.pkl')
@@ -116,7 +154,6 @@ def build_and_evaluate_model():
     plt.xlabel('Modelin Tahmini (Predicted)')
     plt.ylabel('Gerçek Durum (Actual)')
     plt.tight_layout()
-    import os
     os.makedirs('assets', exist_ok=True)
     plt.savefig('assets/confusion_matrix.png')
     plt.show()

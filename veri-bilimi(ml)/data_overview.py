@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 def analyze_data(filepath='cleaned_churn_data.csv'):
     """
@@ -17,7 +18,7 @@ def analyze_data(filepath='cleaned_churn_data.csv'):
     print("\n--- Temel İstatistiksel Özet (Sayısal Veriler) ---")
     print(df.describe())
     
-    print("\n--- Hedef Değişken (Churn) Dağılım Oranı ---")
+    print("\n--- Hedef Değişken (Churn) DağılıM Oranı ---")
     # Kaç müşteri şirketi terk etmiş (1) / terk etmemiş (0) oransal gösterim.
     print(df['Churn'].value_counts(normalize=True) * 100)
     
@@ -34,6 +35,9 @@ def analyze_data(filepath='cleaned_churn_data.csv'):
     plt.title('Müşteri Kaybı (Churn) Dağılımı (0: Kayıp Yok, 1: Kayıp Var)')
     plt.xlabel('Churn Durumu')
     plt.ylabel('Müşteri Sayısı')
+    plt.tight_layout()
+    os.makedirs('assets', exist_ok=True)
+    plt.savefig('assets/churn_distribution.png')
     plt.show()
     
     # 3.b. Sayısal değişkenlerin (TotalCharges, MonthlyCharges vb.) histogramları
@@ -41,6 +45,7 @@ def analyze_data(filepath='cleaned_churn_data.csv'):
     df[num_cols].hist(figsize=(12, 8), bins=30, color='skyblue', edgecolor='black')
     plt.suptitle('Sayısal Değişkenlerin Dağılımları', fontsize=14)
     plt.tight_layout()
+    plt.savefig('assets/num_features_hist.png')
     plt.show()
 
 if __name__ == "__main__":
