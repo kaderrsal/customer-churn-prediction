@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-def analyze_data(filepath='cleaned_churn_data.csv'):
+def analyze_data(filepath='data/cleaned_churn_data.csv'):
     """
     Temizlenmiş verinin Keşifsel Veri Analizi'ni (EDA - Exploratory Data Analysis) yapar.
     Verinin yapısını, istatistiklerini ve dağılımını anlamamızı sağlar.
@@ -36,7 +36,7 @@ def analyze_data(filepath='cleaned_churn_data.csv'):
     plt.xlabel('Churn Durumu')
     plt.ylabel('Müşteri Sayısı')
     plt.tight_layout()
-    os.makedirs('assets', exist_ok=True)
+    os.makedirs('docs/images', exist_ok=True)
     plt.savefig('assets/churn_distribution.png')
     plt.show()
     

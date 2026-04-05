@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-def load_and_clean_data(filepath='churn_data.csv'):
+def load_and_clean_data(filepath='data/churn_data.csv'):
     """
     Ham müşteri kaybı (churn) verisini yükler, gereksiz kolonları temizler, 
     veri tiplerini düzeltir ve işlenmiş veriyi dışa aktarır.
@@ -43,11 +43,11 @@ def load_and_clean_data(filepath='churn_data.csv'):
     df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
     
     # İşlenmiş veriyi yeni bir CSV dosyası olarak kaydetme işlemi.
-    cleaned_filepath = 'cleaned_churn_data.csv'
+    cleaned_filepath = 'data/cleaned_churn_data.csv'
     df.to_csv(cleaned_filepath, index=False)
     print(f"success: Temizlenmiş veri '{cleaned_filepath}' olarak kaydedildi.")
-    # Temizlenmiş verinin ilk 5 satırını görselleştirip assets klasörüne kaydet
-    os.makedirs('assets', exist_ok=True)
+    # Temizlenmiş verinin ilk 5 satırını görselleştirip docs/images klasörüne kaydet
+    os.makedirs('docs/images', exist_ok=True)
     fig, ax = plt.subplots(figsize=(10, 1.5))
     ax.axis('off')
     tbl = ax.table(cellText=df.head().values, colLabels=df.columns, loc='center', cellLoc='center')
@@ -55,7 +55,7 @@ def load_and_clean_data(filepath='churn_data.csv'):
     tbl.set_fontsize(8)
     tbl.scale(1.2, 1.2)
     plt.tight_layout()
-    plt.savefig('assets/cleaned_sample.png')
+    plt.savefig('docs/images/cleaned_sample.png')
     plt.close()
     return df
 

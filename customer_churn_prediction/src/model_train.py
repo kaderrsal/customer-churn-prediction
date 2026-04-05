@@ -12,7 +12,7 @@ from imblearn.over_sampling import SMOTE
 import joblib
 import os
 
-def load_data_and_features(filepath='cleaned_churn_data.csv'):
+def load_data_and_features(filepath='data/cleaned_churn_data.csv'):
     """Veriyi yükler ve özellik (Feature/X) ile hedef değişkeni (Target/y) ayırır."""
     df = pd.read_csv(filepath)
     X = df.drop('Churn', axis=1)
@@ -135,15 +135,16 @@ def build_and_evaluate_model():
     plt.bar(range(15), importances[indices][:15], color='teal', align="center")
     plt.xticks(range(15), [features[i] for i in indices[:15]], rotation=45, ha='right')
     plt.tight_layout()
-    os.makedirs('assets', exist_ok=True)
-    plt.savefig('assets/feature_importance.png')
+    os.makedirs('docs/images', exist_ok=True)
+    plt.savefig('docs/images/feature_importance.png')
     plt.close()
     
     # 7. Model ve Araçların Dışa Aktarımı
-    joblib.dump(best_model, 'best_churn_model.pkl')
-    joblib.dump(scaler, 'scaler.pkl')
+    os.makedirs('models', exist_ok=True)
+    joblib.dump(best_model, 'models/best_churn_model.pkl')
+    joblib.dump(scaler, 'models/scaler.pkl')
     # Orijinal veri şemasını bilmemiz gerektiği için columns kaydı
-    joblib.dump(X_train_resampled.columns.tolist(), 'model_columns.pkl')
+    joblib.dump(X_train_resampled.columns.tolist(), 'models/model_columns.pkl')
     print("\nsuccess: Ara yüz için en iyi model ve veri dönüştürücüler başarıyla kaydedildi!")
     
     # 6. En İyi Modelin Hata Matrisini Görselleştirme
@@ -155,7 +156,7 @@ def build_and_evaluate_model():
     plt.ylabel('Gerçek Durum (Actual)')
     plt.tight_layout()
     os.makedirs('assets', exist_ok=True)
-    plt.savefig('assets/confusion_matrix.png')
+    plt.savefig('docs/images/confusion_matrix.png')
     plt.show()
 
 if __name__ == "__main__":
