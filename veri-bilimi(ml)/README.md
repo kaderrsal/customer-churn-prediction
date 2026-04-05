@@ -1,76 +1,74 @@
-# Customer Churn Prediction
+# 📉 Müşteri Kaybı (Customer Churn) Tahmini Modeli
 
-Bu proje, bir telekomünikasyon şirketinin müşteri kaybını (churn) tahmin etmek için veri bilimi süreçlerinin baştan sona uygulandığı bir örnektir. Proje, veri temizleme, keşifsel veri analizi (EDA), farklı makine öğrenmesi modelleriyle modelleme ve sonuçların değerlendirilmesi adımlarını kapsamaktadır.
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
+[![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Scikit--Learn-orange.svg)](https://scikit-learn.org/)
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 
-## Proje Adımları
-
-### 1. Veri Hazırlama ve Temizleme
-- Ham veri dosyası (`churn_data.csv`) yüklendi.
-- Gereksiz sütunlar (ör. `customerID`) kaldırıldı.
-- Sayısal olması gereken sütunların veri tipleri düzeltildi (`TotalCharges`).
-- Eksik veriler tespit edilip veri setinden çıkarıldı.
-- Hedef değişken (`Churn`) sayısal forma dönüştürüldü (Yes=1, No=0).
-- Temiz veri `cleaned_churn_data.csv` olarak kaydedildi.
-
-**Temizlenmiş verinin ilk 5 satırı:**
-
-![Temizlenmiş veri örneği](assets/cleaned_sample.png)
+Bu proje, telekomünikasyon sektöründeki **müşteri kaybı (churn)** problemini çözmek ve potansiyel olarak şirketi terk edecek riskli müşterileri henüz ayrılmadan önce tespit etmek amacıyla geliştirilmiş uçtan uca bir veri bilimi çalışmasıdır.
 
 ---
 
-### 2. Keşifsel Veri Analizi (EDA)
-- Sütun isimleri, veri tipleri ve temel istatistikler incelendi.
-- Hedef değişkenin (Churn) dağılımı analiz edildi.
-- Kategorik ve sayısal değişkenlerin dağılımları görselleştirildi.
+## 🎯 Proje Özeti
+Şirketlerin en büyük maliyeti yeni müşteri kazanmaktır. Mevcut müşteriyi elde tutmak çok daha ulaşılabilir ve kârlı bir hedeftir. Bu doğrultuda projenin temel yapısı; müşterilerin geçmiş verilerini (fatura tutarları, üyelik süresi, kullandığı ek servisler) analiz ederek, **ayrılma eğiliminde olan (Churn=1)** müşterileri denetimli makine öğrenmesi algoritmalarıyla yakalamaktır.
 
-**Churn (Müşteri Kaybı) Dağılımı:**
+## ⚖️ Teknik İyileştirme: Sınıf Dengesizliği (Data Imbalance) ve SMOTE Algoritması
 
-![Churn Dağılımı](assets/churn_distribution.png)
+Makine öğrenmesi modelleri her zaman dengeli veri setleri ile optimum şekilde çalışır. Verimizde müşterilerin sadece **%26**'sının şirketi terk ettiği görülmüştür. Bu durumda algoritma kolaya kaçarak ağırlıklı olarak "Bu müşteri ayrılmayacak (0)" demeye (ve yüksek bir genel doğruluk tutturmaya) meyilliydi. Sonuç olarak, asıl tespit etmemiz gereken *"ayrılacak riskli müşteriyi yakalama"* başarı oranımız (Recall oranı) ilk aşamada **%57**'de kalıyordu.
 
-**Sayısal Değişkenlerin Dağılımları:**
+**🚀 Çözüm (SMOTE Uygulaması):**
+Azınlık durumdaki "Ayrılan (1)" müşteri verilerini ele alarak Sentetik Azınlık Aşırı Örnekleme (SMOTE) uyguladık ve veriyi eğitim modülünde "4130'a 4130" olacak şekilde dengeledik. Ortaya çıkan dengeli veride modelimizin gerçek tehlikeleri yakalama (Recall) potansiyelini ciddi şekilde artırdık.
 
-![Sayısal Değişkenler Histogramı](assets/num_features_hist.png)
+### 📈 Öncesi & Sonrası Performans Değişimi
 
----
+| Metrik | Uygulanan Model / Yöntem | Riskli/Terk Eden Müşteriyi Tespit Etme (Recall - 1) | Genel Doğruluk Oranı (Accuracy) |
+| :--- | :--- | :---: | :---: |
+| **Orijinal (Dengesiz) Veri** | Lojistik Regresyon | **%57.0** ⚠️ | ~ %80.5 |
+| **SMOTE Uygulanmış (Dengeli) Veri** | Random Forest_ | **%64.0** ⭐ | ~ %76.4 |
 
-### 3. Modelleme ve Karşılaştırma
-- Lojistik Regresyon, Random Forest ve Gradient Boosting modelleriyle eğitim yapıldı.
-- Sayısal veriler ölçeklendirildi (StandardScaler).
-- Modellerin doğruluk (accuracy) ve ROC-AUC skorları karşılaştırıldı.
-- En iyi modelin hata matrisi ve sınıflandırma raporu sunuldu.
-
-**En İyi Modelin Hata Matrisi:**
-
-![Confusion Matrix](assets/confusion_matrix.png)
+> *(Önemli Not: Genel metrik Accuracy (Doğruluk) SMOTE sonrasında gerilemiş gibi görünse de işletme bakımından risksiz bir müşteriyi riskli olarak işaretlemek düşük bir pürüzdür. Ancak asıl tehlike olan **"şirketten ayrılma eylemindeki müşteriyi gözden kaçırmak" (Recall düşüklüğü)**, büyük para kaybıdır. Yani SMOTE operasyonu ile modelin risk tespiti ve stratejik kullanımı güçlendirilmiştir.)*
 
 ---
 
-## Kullanılan Araçlar ve Kütüphaneler
-- Python 3.12
-- pandas, scikit-learn, matplotlib, seaborn
+## 📊 Proje Adımları ve Görsel Analizler
 
-## Projeyi Çalıştırmak
-1. Gerekli kütüphaneleri yükleyin:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Veri hazırlama:
-   ```bash
-   python data_preparation.py
-   ```
-3. Keşifsel veri analizi:
-   ```bash
-   python data_overview.py
-   ```
-4. Model eğitimi ve değerlendirme:
-   ```bash
-   python model_train.py
-   ```
+### 1️⃣ Veri Ön İşleme ve Temizleme (Data Preprocessing)
+Gereksiz değişkenler (`customerID`) veri grubundan atıldı, tip dönüşümleri düzeltildi ve boş veriler atıldı.
 
-## Notlar
-- Proje adımları ve kodlar ayrıntılı yorumlarla açıklanmıştır.
-- Görseller `assets/` klasöründe yer almaktadır. (Görselleri oluşturmak için kodları çalıştırabilirsiniz.)
+<p align="center">
+  <img src="assets/cleaned_sample.png" width="90%" alt="Temiz Sütunlar" />
+</p>
+
+### 2️⃣ Keşifsel Veri Analizi (EDA)
+Kategorik ve sayılara odaklanılmış değişkenlerin dağılımları grafiklere döküldü, hedef (target) değişkene olan bağımlılıklar incelendi.
+
+<p align="center">
+  <img src="assets/churn_distribution.png" width="45%" alt="Terk Edenler" />
+  <img src="assets/num_features_hist.png" width="45%" alt="Kullanimlar" />
+</p>
+
+### 3️⃣ Model Eğitimi (Training & Evaluation)
+Ayrılan %20'lik test verisi ölçeklendi (`StandardScaler`). SMOTE yapılandırmasının akabinde Lojistik Regresyon, Random Forest ve Gradient Boosting modelleri test edildi, güncel ortamdaki en esnek sonuçları **Random Forest** üretmiştir.
+
+<p align="center">
+  <img src="assets/confusion_matrix.png" width="50%" alt="Hata Matrisi" />
+</p>
 
 ---
 
-Her türlü katkı ve öneriye açıktır!
+## 🛠️ Kurulum ve Çalıştırma
+
+Projeyi lokal bilgisayar ortamında denerken aşağıdaki komutları izleyebilirsiniz:
+
+```bash
+# 1. Gerekli açık kaynak modülleri (kütüphaneleri) yükleyin
+pip install pandas scikit-learn matplotlib seaborn imbalanced-learn
+
+# 2. Veri okuma ve temizleme operasyonu
+python data_preparation.py
+
+# 3. İstatistik veriler ve model rapor/grafikleri (Görsel EDA)
+python data_overview.py
+
+# 4. Modeli Eğitin, SMOTE dengeleyicisini devreye sokun (.pkl dosyalarınıza yazın)
+python model_train.py
+```

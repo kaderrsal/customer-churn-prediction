@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
+from imblearn.over_sampling import SMOTE
+import joblib
 
 def load_data_and_features(filepath='cleaned_churn_data.csv'):
     """Veriyi yükler ve özellik (Feature/X) ile hedef değişkeni (Target/y) ayırır."""
@@ -45,6 +47,15 @@ def build_and_evaluate_model():
     X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols])
     X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
     
+    # 3.5. Veri Dengesizliğini Giderme (SMOTE)
+    # Ayrılan (Churn=1) müşteri verisi az olduğu için modeli bu konuda eğitmekte zorlanıyoruz.
+    # SMOTE (Sentetik Aşırı Örnekleme) ile azınlık sınıfını sentetik verilerle çoğaltıp eşitliyoruz.
+    print("info: SMOTE uygulanarak veri seti dengeleniyor (Azınlık sınıfı çoğaltılıyor)...")
+    smote = SMOTE(random_state=42)
+    X_train_resampled, y_train_resampled = smote.fit_resample(X_train_scaled, y_train)
+    print(f"info: SMOTE Öncesi Sınıf Dağılımı: \n{y_train.value_counts()}")
+    print(f"info: SMOTE Sonrası Sınıf Dağılımı: \n{y_train_resampled.value_counts()}")
+    
     # 4. Modellerin Tanımlanması
     # Daha yüksek doğruluk için farklı makine öğrenmesi algoritmaları deniyoruz:
     models = {
@@ -63,10 +74,10 @@ def build_and_evaluate_model():
     
     # 5. Modellerin Eğitilmesi ve Karşılaştırılması
     for model_name, model in models.items():
-        # Modeli eğit
-        model.fit(X_train_scaled, y_train)
+        # Modeli SMOTE uygulanmış, dengeli veri ile eğit
+        model.fit(X_train_resampled, y_train_resampled)
         
-        # Tahminleme (Prediction)
+        # Tahminleme (Prediction) - Test verisi asla değiştirilmez (orijinal veriden test edilir)
         y_pred = model.predict(X_test_scaled)
         y_proba = model.predict_proba(X_test_scaled)[:, 1] 
         
@@ -90,6 +101,13 @@ def build_and_evaluate_model():
     print(f"\n{best_model_name} için Sınıflandırma Analizi (Classification Report):")
     print(classification_report(y_test, best_y_pred))
     
+    # 5.5. En İyi Modeli ve Scaler'ı Ara Yüz (Streamlit) İçin Kaydetme
+    joblib.dump(models[best_model_name], 'best_churn_model.pkl')
+    joblib.dump(scaler, 'scaler.pkl')
+    # Orijinal veri şemasını bilmemiz gerektiği için columns kaydı
+    joblib.dump(X_train_resampled.columns.tolist(), 'model_columns.pkl')
+    print("\nsuccess: Ara yüz için en iyi model ve veri dönüştürücüler başarıyla kaydedildi!")
+    
     # 6. En İyi Modelin Hata Matrisini Görselleştirme
     plt.figure(figsize=(6, 4))
     cm = confusion_matrix(y_test, best_y_pred)
@@ -97,6 +115,10 @@ def build_and_evaluate_model():
     plt.title(f'Hata Matrisi - En İyi Model ({best_model_name})')
     plt.xlabel('Modelin Tahmini (Predicted)')
     plt.ylabel('Gerçek Durum (Actual)')
+    plt.tight_layout()
+    import os
+    os.makedirs('assets', exist_ok=True)
+    plt.savefig('assets/confusion_matrix.png')
     plt.show()
 
 if __name__ == "__main__":
