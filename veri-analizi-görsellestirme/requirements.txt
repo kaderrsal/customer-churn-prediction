@@ -1,0 +1,9 @@
+pandas
+numpy
+requests
+kaggle
+plotly
+streamlit
+scipy
+rapidfuzz
+h3
